@@ -4,6 +4,7 @@ from tkinter import ttk
 from tkinter import Menu, filedialog, messagebox
 from analizador_lexico import lexer, find_column, palabras_reservadas
 from analizador_sintactico import parse, obtener_errores
+from analizador_semantico import tabla_simbolos
 
 class GrassCodeEditor:
     def __init__(self, notebook, title="Untitled"):
@@ -184,7 +185,10 @@ class GrassCodeEditor:
         codigo = self.txtArea.get("1.0", tk.END)
         lexer.input(codigo)
         self.tablaTokens.delete(*self.tablaTokens.get_children())
+        tabla_simbolos.reinicio_clase()
         
+        linea = 0
+        columna = 0
         while True:
             tok = lexer.token()
             if not tok:
@@ -199,11 +203,12 @@ class GrassCodeEditor:
         
         # Obtén los errores y muéstralos en la interfaz
         errores = obtener_errores()
-        
         for error in errores:
             self.txtTerminal.insert(tk.END, f"{error}\n")
 
         self.txtTerminal.config(state=tk.DISABLED)  # Deshabilita el modo de escritura para que solo sea lectura
+        lexer.lineno = 1
+        lexer.lexpos = 0
 
 
     def run(self, text):

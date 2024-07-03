@@ -9,6 +9,9 @@ print(tokens)
 declaracionesRegistro = []
 errores = []
 errores_semanticos = []
+# Ámbito
+ambito = False
+
 
 
 # Precedencia de operadores (si es necesario)
@@ -61,7 +64,8 @@ def p_declaracion(p):
         p[0] = [p[1]]
     else:
         p[0] = p[1] + [p[2]]
-# Regla vacía, tipos de datos y la representacón de sus valores
+
+# Regla vacía, tipos de datos, la representacón de sus valores y las palabras reservadas
 def p_tipo_dato(p):
     '''
     tipo_dato : INT
@@ -79,7 +83,6 @@ def p_valor_dato(p):
                | CADENA
     '''
     p[0] = p[1]
-
 def p_palabras_reservadas(p):
     '''
     palabras_reservadas : INT
@@ -103,16 +106,9 @@ def p_palabras_reservadas(p):
                            | FALSE
 '''
     p[0] = p[1]
-
 def p_vacio(p):
     '''vacio : '''
     p[0] = None
-#Fin Esqueleto del programa -----------------------------------------------------------------------------------------------------------------------------
-#########################################################################################################################################################
-
-
-##########################################################################################################################################################
-# Cuerpos para clase, if y blucles -----------------------------------------------------------------------------------------------------------------------
 def p_cuerpo(p):
     '''cuerpo : declaracion
               | cuerpo declaracion
@@ -121,28 +117,106 @@ def p_cuerpo(p):
         p[0] = [p[1]]
     else:
         p[0] = p[1] + [p[2]]
-# Cuerpo para funciones
+#Fin Esqueleto del programa -----------------------------------------------------------------------------------------------------------------------------
+#########################################################################################################################################################
+
+
+#########################################################################################################################################################
+# Agrupaciones (Esqueleto de funcion) -----------------------------------------------------------------------------------------------------------------
 def p_cuerpo_funcion(p):
     '''cuerpo_funcion : declaracion_en_funcion
-                      | cuerpo declaracion_en_funcion
+                      | cuerpo_funcion declaracion_en_funcion
                       | vacio'''
     if len(p) == 2:
         p[0] = [p[1]]
     else:
         p[0] = p[1] + [p[2]]   
 def p_declaracion_en_funcion(p):
-    '''declaracion_en_funcion : declaracion_variable
-                              | declaracion_if
-                              | declaracion_if_else
-                              | declaracion_while
-                              | llamar_funcion
-                              | llamar_funcion_return
-                              | asignacion_variable_variable
-                              | asignacion_variable_funcion_return
-                              | incremento_individual
-                              | decremento_individual
+    '''declaracion_en_funcion : declaracion_variable_en_funcion
                               | vacio'''
     p[0] = p[1]
+def p_declaracion_variable_en_funcion(p):
+    'declaracion_variable_en_funcion : ID PARENTESIS_APERTURA tipo_dato PARENTESIS_CIERRE ASIGNAR valor_dato PUNTO_COMA'
+    nombre_variable = p[1] # Guardar el nombre propuesto en ID
+    tipo_dato = p[3] # Guardar el dato encerrado entre parentesis () -> int / float / bool /  string
+    valor_variable = p[6] # Guardar el valor asignado 0, 0.0, true / false, "cadena"
+    
+    # Verificación semántica
+    if tipo_dato == 'int': # Si lo recuperado del tipo dato resulta en la palabra reservada int
+        # ¿Es insitacia de int? o El valor rescatado de valor_dato ¿es entero?
+        if not isinstance(valor_variable, int):
+            mensaje = (f"Error Semántico: El valor asignado a la variable '{nombre_variable}' debe ser un entero.")
+            errores.append(mensaje)
+    elif tipo_dato == 'float':
+        if not isinstance(valor_variable, float) and not isinstance(valor_variable, int):
+            mensaje = (f"Error Semántico: El valor asignado a la variable '{nombre_variable}' debe ser un número flotante o entero.")
+            errores.append(mensaje)
+    elif tipo_dato == 'string':
+        if not isinstance(valor_variable, str):
+            mensaje = (f"Error Semántico: El valor asignado a la variable '{nombre_variable}' debe ser una cadena.")
+            errores.append(mensaje)
+    elif tipo_dato == 'bool':
+        if valor_variable not in ['true', 'false']:
+            mensaje = (f"Error Semántico: El valor asignado a la variable '{nombre_variable}' debe ser 'true' o 'false'.")
+            errores.append(mensaje)
+    else:
+        mensaje = (f"Tipo de dato '{tipo_dato}' no reconocido.")
+        errores.append(mensaje)
+    tabla_simbolos.agregar_variable(nombre_variable, tipo_dato, valor_variable, True)
+    p[0] = ('declaracion_variable', nombre_variable, tipo_dato, valor_variable)
+    mensaje = (f"Se ha declarado una variable en la línea {p.lineno(1)}")
+    declaracionesRegistro.append(mensaje)
+
+
+   #-.-----------------------------------------------------
+    # Agregar mensaje a las declaraciones registradas
+    declaracionesRegistro.append(mensaje)
+    
+    # try:
+    #     # Intentar agregar el objeto a la tabla de símbolos
+    #     #tabla_simbolos.agregar(nombre, tipo)
+    #     p[0] = ('declaracion_objeto', nombre, tipo)
+    # except ValueError as e:
+    #     # Capturar el error semántico y agregarlo a la lista de errores
+    #     errores_semanticos.append(f"Error semántico: {str(e)}")
+    #     p[0] = ('error', str(e))
+
+    # new patron(object) from Patron_Class;
+# def p_declaracion_if_en_funcion(p):
+#     '''declaracion_if_en_funcion : IF PARENTESIS_APERTURA condiciones PARENTESIS_CIERRE LLAVE_APERTURA cuerpo LLAVE_CIERRE'''
+#     mensaje = ("Se ha declarado un if")
+#     declaracionesRegistro.append(mensaje)
+#     p[0] = ('declaracion_if', p[3], p[6])
+# def p_declaracion_if_else_en_funcion(p):
+#     '''declaracion_if_else_en_funcion : IF PARENTESIS_APERTURA condiciones PARENTESIS_CIERRE LLAVE_APERTURA cuerpo LLAVE_CIERRE ELSE LLAVE_APERTURA cuerpo LLAVE_CIERRE'''
+#     mensaje = ("Se ha declarado una estructura if - else")
+#     declaracionesRegistro.append(mensaje)
+#     p[0] = ('declaracion_if_else', p[3], p[6], p[10])
+# def p_declaracion_while_en_funcion(p):
+#     '''declaracion_while_en_funcion : WHILE PARENTESIS_APERTURA condicion_while PARENTESIS_CIERRE LLAVE_APERTURA cuerpo LLAVE_CIERRE'''
+#     mensaje = ("Se ha declarado un ciclo while")
+#     declaracionesRegistro.append(mensaje)
+#     p[0] = ('declaracion_while', p[3], p[6])
+# # Elementos de la estrucutra del ciclo while
+# def p_variable_while_en_funcion(p):
+#     '''variable_while_en_funcion : NUMERO_ENTERO
+#                       | ID
+#                       | TRUE
+#                       | FALSE'''
+#     if isinstance(p[1], tuple):
+#         p[0] = p[1]
+#     else:
+#         p[0] = ('variable_while', p[1])
+# def p_comparadores_while_en_funcion(p):
+#     '''comparadores_while_en_funcion : IGUAL
+#                           | MAYOR_QUE
+#                           | MAYOR_IGUAL
+#                           | MENOR_QUE
+#                           | MENOR_IGUAL'''
+#     p[0] = ('comparadores_while', p[1])
+
+
+
 # Cuerpo para condiciones en for, while e if's
 def p_condiciones(p):
     '''condiciones : condicion
@@ -235,29 +309,13 @@ def p_declaracion_variable(p):
     else:
         mensaje = (f"Tipo de dato '{tipo_dato}' no reconocido.")
         errores.append(mensaje)
-    tabla_simbolos.agregar(nombre_variable, tipo_dato, valor_variable)
+    tabla_simbolos.agregar_variable(nombre_variable, tipo_dato, valor_variable, False)
    
    
     p[0] = ('declaracion_variable', nombre_variable, tipo_dato, valor_variable)
     mensaje = (f"Se ha declarado una variable en la línea {p.lineno(1)}")
     declaracionesRegistro.append(mensaje)
-
-
-   #-.-----------------------------------------------------
-
-    # Agregar mensaje a las declaraciones registradas
-    declaracionesRegistro.append(mensaje)
     
-    # try:
-    #     # Intentar agregar el objeto a la tabla de símbolos
-    #     #tabla_simbolos.agregar(nombre, tipo)
-    #     p[0] = ('declaracion_objeto', nombre, tipo)
-    # except ValueError as e:
-    #     # Capturar el error semántico y agregarlo a la lista de errores
-    #     errores_semanticos.append(f"Error semántico: {str(e)}")
-    #     p[0] = ('error', str(e))
-
-    # new patron(object) from Patron_Class;
 # Sentencias de control if
 def p_declaracion_if(p):
     '''declaracion_if : IF PARENTESIS_APERTURA condiciones PARENTESIS_CIERRE LLAVE_APERTURA cuerpo LLAVE_CIERRE'''
@@ -303,10 +361,11 @@ def p_return(p):
 # Funcion sin retorno de valor
 def p_declaracion_funcion(p):
     ''' declaracion_funcion : FUNCT ID PARENTESIS_APERTURA parametros PARENTESIS_CIERRE LLAVE_APERTURA cuerpo_funcion LLAVE_CIERRE'''
-    tabla_simbolos.entrar_ambito()
-    mensaje = ("Se ha declarado una función")
+    nombre_funcion = p[2]
+    mensaje = (f"Se ha declarado la función {nombre_funcion}")
     declaracionesRegistro.append(mensaje)
-    tabla_simbolos.salir_ambito()
+    tabla_simbolos.agregar_funcion(nombre_funcion, False)
+
 # Elementos de la estrucura de funcion sin y con retorno de valor
 def p_parametros(p):
     '''parametros : parametro
@@ -364,11 +423,18 @@ def p_tipo_envio_parametro(p):
                              | FALSE'''
     p[0] = ('tipo_envio_parametro', p[1])
 # Asignaciones
+def p_variable_asignacion(p):
+    '''variable_asignacion : ID
+                           | NUMERO_ENTERO
+                           | NUMERO_FLOTANTE
+                           | CADENA
+                           | TRUE
+                           | FALSE'''
 def p_asignacion_variable_variable(p):
-    '''asignacion_variable_variable : ID PARENTESIS_APERTURA tipo_dato PARENTESIS_CIERRE ASIGNAR ID PARENTESIS_APERTURA tipo_dato PARENTESIS_CIERRE PUNTO_COMA'''
+    '''asignacion_variable_variable : ID ASIGNAR variable_asignacion  PUNTO_COMA'''
     mensaje = ("Se le ha asignado a una variable el valor de otra")
     declaracionesRegistro.append(mensaje)
-    p[0] = ('asignacion_variable_variable', p[1], p[3], p[6], p[8])
+    p[0] = ('asignacion_variable_variable', p[1], p[3])
 def p_asignacion_variable_funcion_return(p):
     ''' asignacion_variable_funcion_return : ID PARENTESIS_APERTURA tipo_dato PARENTESIS_CIERRE ASIGNAR CORCHETE_APERTURA tipo_dato CORCHETE_CIERRE ID PARENTESIS_APERTURA parametros PARENTESIS_CIERRE PUNTO_COMA'''
     mensaje = ("Se le ha asignado a una variable el valor resultado de la una funcion return")
